@@ -54,15 +54,13 @@ func Strict(strict bool) Option {
 	}
 }
 
-// NoPrefix matches all environment variables. Unknown environment variables are ignored.
-var NoPrefix = NewPrefix("")
+// AllEnv matches all environment variables. Unknown environment variables are ignored.
+var AllEnv = NewPrefix("")
 
-func (p Prefix) envName(flagName string) string {
-	s := strings.ToUpper(flagName)
-	if p.prefix != "" {
-		s = fmt.Sprintf("%s_%s", p.prefix, s)
-	}
-	return strings.ReplaceAll(s, "-", "_")
+// BindAll binds all environment variables to the default flag.CommandLine flag set. Unrecognized environment variables
+// are ignored.
+func BindAll() {
+	Bind(AllEnv)
 }
 
 // Bind binds environment variables to the default flag.CommandLine flag set.
@@ -101,10 +99,15 @@ func updateUsage(flag *flag.Flag, prefixes []*Prefix) {
 	flag.Usage = fmt.Sprintf("%s [%s]", flag.Usage, strings.Join(envs, ", "))
 }
 
-func bind(flagSet *flag.FlagSet, prefixes []*Prefix) error {
-	if len(prefixes) == 0 {
-		prefixes = []*Prefix{NoPrefix}
+func (p Prefix) envName(flagName string) string {
+	s := strings.ToUpper(flagName)
+	if p.prefix != "" {
+		s = fmt.Sprintf("%s_%s", p.prefix, s)
 	}
+	return strings.ReplaceAll(s, "-", "_")
+}
+
+func bind(flagSet *flag.FlagSet, prefixes []*Prefix) error {
 	if flagSet.Parsed() {
 		return fmt.Errorf("envflag.Bind() must be called before flag.Parse()")
 	}

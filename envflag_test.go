@@ -31,6 +31,7 @@ func TestBindSuccess(t *testing.T) {
 	}{
 		{
 			description: "value from environment",
+			prefixes: []*Prefix{AllEnv},
 			env: map[string]string{
 				"MY_VAR": "env value",
 			},
@@ -38,11 +39,13 @@ func TestBindSuccess(t *testing.T) {
 		},
 		{
 			description: "value from command line",
+			prefixes: []*Prefix{AllEnv},
 			cmdLine:     []string{"--my-var=cmd value"},
 			want:        "cmd value",
 		},
 		{
 			description: "value provided on both cmdLine and in env",
+			prefixes: []*Prefix{AllEnv},
 			env: map[string]string{
 				"MY_VAR": "env value",
 			},
@@ -51,6 +54,7 @@ func TestBindSuccess(t *testing.T) {
 		},
 		{
 			description: "default value",
+			prefixes: []*Prefix{AllEnv},
 			want:        "default value",
 		},
 		{
@@ -115,7 +119,7 @@ func TestBindErrors(t *testing.T) {
 	t.Run("called after flag.Parse()", func(t *testing.T) {
 		fs := flag.NewFlagSet("test", flag.ContinueOnError)
 		_ = fs.Parse(nil)
-		if err := BindFlagSet(fs); err == nil {
+		if err := BindFlagSet(fs, AllEnv); err == nil {
 			t.Error("BindFlagSet() was called after flag.Parse() but did not return an error. Expected an error.")
 		}
 	})
@@ -124,7 +128,7 @@ func TestBindErrors(t *testing.T) {
 		fs := flag.NewFlagSet("test", flag.ContinueOnError)
 		intVar := fs.Int("int-var", 20, "an int flag.")
 		os.Setenv("INT_VAR", "not-a-number")
-		err := BindFlagSet(fs)
+		err := BindFlagSet(fs, AllEnv)
 		if err == nil {
 			t.Fatal("Calling BindFlagSet() with INT_VAR=not-a-number did not return an error. Expected an error.")
 		}
@@ -156,7 +160,7 @@ func TestBindUpdatesUsage(t *testing.T) {
 		os.Clearenv()
 		fs := flag.NewFlagSet("test", flag.ContinueOnError)
 		fs.String("my-var", "default value", "This is a flag.")
-		if err := BindFlagSet(fs); err != nil {
+		if err := BindFlagSet(fs, AllEnv); err != nil {
 			t.Fatalf("Failed to bind flag set to environment variables: %v", err)
 		}
 		wantUsage := "This is a flag. [MY_VAR]"
@@ -169,7 +173,7 @@ func TestBindUpdatesUsage(t *testing.T) {
 		os.Clearenv()
 		fs := flag.NewFlagSet("test", flag.ContinueOnError)
 		fs.String("my-var", "default value", "This is a flag.")
-		if err := BindFlagSet(fs, NoPrefix, NewPrefix("MYAPP", Strict(true))); err != nil {
+		if err := BindFlagSet(fs, AllEnv, NewPrefix("MYAPP", Strict(true))); err != nil {
 			t.Fatalf("Failed to bind flag set to environment variables: %v", err)
 		}
 		wantUsage := "This is a flag. [MY_VAR, MYAPP_MY_VAR]"
